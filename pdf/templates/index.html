@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resume - Template 2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  />
+
+  <style>
+  
+    @page {
+      size: A4;
+      margin: 20mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #eaeaea;
+      font-family: "Times New Roman", Georgia, serif;
+      color: #000;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: auto;
+      background: #fff;
+      padding: 20mm;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .header .role {
+      font-size: 16px;
+      margin-top: 4px;
+    }
+
+    .contact {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px 40px;
+      margin-top: 14px;
+      font-size: 12px;
+    }
+
+    .contact div {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .contact i {
+      width: 14px;
+      text-align: center;
+    }
+
+
+    .section-title {
+      background: #efefef;
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      padding: 6px 0;
+      margin: 24px 0 10px;
+    }
+
+ 
+    .profile p {
+      font-size: 12.5px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+ 
+    .job {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 12.5px;
+      font-weight: bold;
+    }
+
+    .job span {
+      font-weight: normal;
+    }
+
+    ul {
+      margin: 6px 0 16px 18px;
+      font-size: 12.5px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+
+    .education {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      font-weight: bold;
+    }
+
+    .education span {
+      font-weight: normal;
+    }
+
+  
+    .two-columns {
+      display: flex;
+      gap: 40px;
+      font-size: 12.5px;
+    }
+
+    .two-columns ul {
+      margin-left: 18px;
+    }
+
+
+    @media print {
+      body {
+        background: none;
+      }
+      .page {
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <h1>Refilwe Mokoena</h1>
+      <div class="role">Software Developer</div>
+
+      <div class="contact">
+        <div><i class="fa-solid fa-location-dot"></i>Pretoria, South Africa</div>
+        <div><i class="fa-solid fa-envelope"></i>mokoena@gmail.com</div>
+        <div><i class="fa-solid fa-phone"></i>+27 64 566 562</div>
+        <div><i class="fa-brands fa-linkedin"></i>ririmokoena</div>
+      </div>
+    </div>
+
+    <!-- Profile -->
+    <div class="section-title">Profile</div>
+    <div class="profile">
+      <p>
+        Passionate and detail-oriented Software Developer with experience building
+        reliable, scalable, and user-focused applications. Strong ability to
+        design, develop, and maintain software solutions while collaborating
+        effectively with cross-functional teams. Proficient in problem-solving,
+        writing clean and efficient code, and adapting quickly to new
+        technologies. Committed to delivering high-quality software that meets
+        business requirements and enhances user experience.
+      </p>
+    </div>
+
+    <!-- Work Experience -->
+    <div class="section-title">Work Experience</div>
+
+    <div class="job">
+      <div><strong>Junior Software Developer</strong>, ABC Tech Solutions</div>
+      <div>2022 Aug – Present<br /><span>Pretoria, South Africa</span></div>
+    </div>
+
+    <ul>
+      <li>
+        Developed and maintained responsive web applications using HTML, CSS,
+        JavaScript, and modern frameworks.
+      </li>
+      <li>
+        Collaborated with UI/UX designers and backend developers to deliver
+        user-friendly and scalable solutions.
+      </li>
+      <li>
+        Debugged, tested, and optimized applications to improve performance
+        and reliability.
+      </li>
+    </ul>
+
+    <div class="job">
+      <div><strong>Software Developer Intern</strong>, XYZ Digital Agency</div>
+      <div>2021 Jan – 2022 Jun<br /><span>Pretoria, South Africa</span></div>
+    </div>
+
+    <ul>
+      <li>
+        Assisted in building and testing web applications, gaining hands-on
+        experience in frontend and backend development.
+      </li>
+      <li>
+        Wrote clean, reusable, and well-documented code following best practices.
+      </li>
+      <li>
+        Participated in code reviews and agile development processes.
+      </li>
+    </ul>
+
+    <!-- Education -->
+    <div class="section-title">Education</div>
+    <div class="education">
+      <div>Bachelor of Science in Information Technology, University of Pretoria</div>
+      <div>2018 – 2022</div>
+    </div>
+
+    <!-- Skills -->
+    <div class="section-title">Skills</div>
+    <div class="two-columns">
+      <ul>
+        <li>HTML, CSS, JavaScript</li>
+        <li>React & Basic Node.js</li>
+        <li>Git & GitHub</li>
+      </ul>
+      <ul>
+        <li>REST APIs & JSON</li>
+        <li>Problem Solving & Debugging</li>
+        <li>Agile & Scrum Fundamentals</li>
+      </ul>
+    </div>
+
+    <!-- Languages -->
+    <div class="section-title">Languages</div>
+    <div class="two-columns">
+      <ul>
+        <li>English</li>
+        <li>Xitsonga</li>
+      </ul>
+      <ul>
+        <li>Xitsonga</li>
+      </ul>
+    </div>
+
+  </div>
+</body>
+</html>
