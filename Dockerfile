@@ -1,7 +1,6 @@
 # Use official Python image
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies for WeasyPrint and PDFs
@@ -12,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2-dev \
     libpango-1.0-0 \
     libpango1.0-dev \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-xlib-2.0-0 \
     libgobject-2.0-0 \
     libxml2 \
     libxml2-dev \
@@ -35,5 +34,5 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Command to run
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Run Uvicorn
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
