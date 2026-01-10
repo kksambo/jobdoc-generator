@@ -9,7 +9,7 @@
 
 @page {
   size: A4;
-  margin: 20mm;
+  margin: 10mm;
 }
 
 * {
@@ -27,13 +27,15 @@ body {
 
 
 .page {
-  width: 210mm;
+  width: 100%;
+  max-width: 800px; /* center CV nicely */
   min-height: 297mm;
-  margin: 20px auto;
+  margin: 20px auto; /* center horizontally */
   background: #ffffff;
-  padding: 22mm;
+  padding: 15mm 12mm; /* top/bottom 15mm, left/right 12mm */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
+
 
 
 .header {
@@ -185,26 +187,20 @@ li {
     <!-- Header -->
     <header class="header">
       <div class="left">
-        <h1>REFILWE MOKOENA</h1>
-        <p class="title">Digital Marketing Project Manager</p>
+        <h1>{{full_name}}</h1>
+        <p class="title">{{ job_title }}</p>
       </div>
       <div class="right">
-        <p>Pretoria, GAUTENG</p>
-        <p>+27 234 675 321</p>
-        <p>mokoena@gmail.com</p>
+        <p>{{location}}</p>
+        <p>{{phone}}</p>
+        <p>{{email}}</p>
       </div>
     </header>
 
     <!-- Summary -->
     <section>
       <h2>SUMMARY</h2>
-      <p>
-        Results-driven Digital Marketing Project Manager with over 9 years of
-        experience leading end-to-end marketing and PR campaigns, optimizing
-        budgets, and managing cross-functional teams of up to 70 people.
-        Proven ability to drive project efficiency by reducing costs while
-        maintaining high-quality outcomes.
-      </p>
+      <p>{{ profile_summary }}</p>
     </section>
 
     <!-- Experience -->
@@ -212,31 +208,14 @@ li {
       <h2>EXPERIENCE</h2>
 
       <div class="experience">
-        <div class="date">January 2015 – Current</div>
+        <div class="date">{{ start_date }} – {{ end_date }}</div>
         <div class="details">
-          <h3>Project Manager</h3>
-          <p class="company">Super Solutions, Centurion</p>
+          <h3>{{ role }}</h3>
+          <p class="company">{{ company_name }}</p>
           <ul>
-            <li>
-              Generated, produced and maintained 42 end-to-end marketing and PR
-              projects of which three became viral stunts. Completed all the
-              projects within approved budget, timescale, and expected quality.
-            </li>
-            <li>
-              Managed, led and coordinated various teams of up to 70 people to
-              perform marketing programs. This included collaboration both with
-              internal and external teams.
-            </li>
-            <li>
-              Solved internal financial business challenges by reducing projects'
-              costs by 25% while maintaining quality, thus achieving remarkable
-              ROI.
-            </li>
-            <li>
-              Created, organized and implemented the company’s employee training
-              program which helped up-to-date educational book reading practices,
-              improving professional skills and workflow.
-            </li>
+            {% for duty in duties %}
+              <li> {{ duty }} </li>
+            {% endfor %}
           </ul>
         </div>
       </div>
@@ -246,12 +225,13 @@ li {
     <section>
       <h2>EDUCATION</h2>
       <div class="education">
-        <div class="date">2013</div>
+        <div class="date">{{ graduation_year }}</div>
         <div class="details">
-          <h3>Business Administration</h3>
-          <p>Vaal University of Technology, Vaal , GAUTENG</p>
+          <h3>{{ qualification }}</h3>
+          <p>{{ institution }}</p>
           <p></p>
         </div>
+
       </div>
     </section>
 
@@ -259,14 +239,11 @@ li {
     <section>
       <h2>SKILLS</h2>
       <div class="skills">
-        <ul>
-          <li>Scrum</li>
-          <li>SEO</li>
-        </ul>
-        <ul>
-          <li>SEA</li>
-          <li>Social Media</li>
-        </ul>
+          <ul>
+            {% for skill in skills %}
+              <li> {{ skill }} </li>
+            {% endfor %}
+          </ul>
       </div>
     </section>
   </div>

@@ -151,9 +151,9 @@
       <div class="item-title">{{ role }}</div>
       <div class="item-subtitle">{{ company_name }}</div>
       <ul>
-        <li>{{ responsibility_1 }}</li>
-        <li>{{ responsibility_2 }}</li>
-        <li>{{ responsibility_3 }}</li>
+        {% for duty in duties %}
+          <li>{{ duty }}</li>
+        {% endfor %}
       </ul>
     </div>
   </div>
@@ -173,16 +173,15 @@
   <div class="section">
     <div class="section-title">Skills</div>
     <div class="skills">
-      <div class="skill">{{ skill_1 }}</div>
-      <div class="skill">{{ skill_2 }}</div>
-      <div class="skill">{{ skill_3 }}</div>
-      <div class="skill">{{ skill_4 }}</div>
+      {% for skill in skills %}
+        <div class="skill">{{ skill }}</div>
+      {% endfor %}
     </div>
   </div>
 
   <!-- Footer -->
   <div class="footer">
-     {{ full_name }} • Cute CV
+     {{ full_name }} • Pink Bloom CV
   </div>
 
 </body>
