@@ -7,4 +7,6 @@ pydyf
 cffi
 pdfkit
 trml2pdf
+httpx>=0.28.1
+
 
