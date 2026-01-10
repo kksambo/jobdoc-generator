@@ -6,4 +6,5 @@ weasyprint
 pydyf
 cffi
 pdfkit
+trml2pdf
 
