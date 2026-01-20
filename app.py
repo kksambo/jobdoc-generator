@@ -1,83 +1,339 @@
-from fastapi import FastAPI, Body
-from fastapi.responses import HTMLResponse, FileResponse,JSONResponse
+from fastapi import FastAPI, Body, Depends, HTTPException, Header, UploadFile, File
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pdf.generator import PDFGenerator
-import os
+import os,shutil
 import uuid
 import uvicorn
+from sqlalchemy.orm import Session
+from database import SessionLocal, engine
+import models, schemas
+import bcrypt
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from groq import Groq
+from pdf.generator import PDFGenerator
 
-app = FastAPI(title="CV Generator API")
+from typing import List
 
-# CORS (for React)
+
+
+
+# =========================
+# Load environment
+# =========================
+load_dotenv()
+
+# =========================
+# FastAPI instance
+# =========================
+app = FastAPI(title="CV & Cover Letter Generator API")
+
+# =========================
+# CORS (for React frontend)
+# =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # or ["http://localhost:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "documents")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+# =========================
+# Database setup
+# =========================
+models.Base.metadata.create_all(bind=engine)
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# =========================
+# JWT settings
+# =========================
+SECRET_KEY = "supersecretkey"  # replace in production
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+# =========================
+# Base directories for PDFs
+# =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATES_DIR = os.path.join(BASE_DIR, "pdf", "templates")
-OUTPUT_DIR = os.path.join(BASE_DIR, "uploads", "certificates")
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+CV_TEMPLATES_DIR = os.path.join(BASE_DIR, "pdf", "cv-templates")
+CV_OUTPUT_DIR = os.path.join(BASE_DIR, "uploads", "certificates")
 
-pdf = PDFGenerator(TEMPLATES_DIR)
+COVER_LETTER_TEMPLATES_DIR = os.path.join(BASE_DIR, "pdf", "cover-letter-templates")
+COVER_LETTER_OUTPUT_DIR = os.path.join(BASE_DIR, "uploads", "cover-letters")
+
+os.makedirs(CV_OUTPUT_DIR, exist_ok=True)
+os.makedirs(COVER_LETTER_OUTPUT_DIR, exist_ok=True)
+
+# =========================
+# PDF generators
+# =========================
+pdf = PDFGenerator(CV_TEMPLATES_DIR)
+letters_pdf = PDFGenerator(COVER_LETTER_TEMPLATES_DIR)
+
+# =========================
+# Groq Client
+# =========================
+client = Groq(api_key=os.getenv("GROQ_KEY"))
+
+# =========================
+# =========================
+# CV Routes
+# =========================
+# =========================
+
+
+
+def get_current_user(authorization: str = Header(...)):
+    """
+    Decode JWT token from Authorization header.
+    Expects header: Authorization: Bearer <token>
+    """
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid auth header")
+    token = authorization[len("Bearer "):]  # Remove 'Bearer ' prefix
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 
 @app.post("/api/cv/preview", response_class=HTMLResponse)
 def preview_cv(data: dict = Body(...)):
-    """
-    Returns rendered HTML for live preview
-    """
     template = data["template"]
     context = data["cv"]
-
     html = pdf.renderer.render(template, context)
     return html
 
+
 @app.post("/api/cv/download")
 def download_cv(data: dict = Body(...)):
-    """
-    Generates and returns the CV PDF
-    """
     template = data["template"]
     context = data["cv"]
-
     filename = f"cv_{uuid.uuid4()}.pdf"
-    output_path = os.path.join(OUTPUT_DIR, filename)
+    output_path = os.path.join(CV_OUTPUT_DIR, filename)
+    pdf.generate(template_name=template, output_filename=output_path, context=context)
+    return FileResponse(path=output_path, filename="My_CV.pdf", media_type="application/pdf")
 
-    pdf.generate(
-        template_name=template,
-        output_filename=output_path,
-        context=context,
-    )
 
-    return FileResponse(
-        path=output_path,
-        filename="My_CV.pdf",
-        media_type="application/pdf"
-    )
-
-@app.get("/api/cv/templates")
-def list_templates():
-    """
-    Returns a list of all CV template filenames in the templates folder
-    """
+@app.get("/api/cv/cv-templates")
+def list_cv_templates():
     try:
         templates = [
-            f for f in os.listdir(TEMPLATES_DIR)
-            if os.path.isfile(os.path.join(TEMPLATES_DIR, f)) and f.endswith(".html")
+            f for f in os.listdir(CV_TEMPLATES_DIR)
+            if os.path.isfile(os.path.join(CV_TEMPLATES_DIR, f)) and f.endswith(".html")
         ]
         return JSONResponse(content={"templates": templates})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-if __name__ == "__main__":
+# =========================
+# Cover Letter Routes
+# =========================
+@app.post("/api/cover-letter/preview", response_class=HTMLResponse)
+def preview_cover_letter(data: dict = Body(...)):
+    template = data["template"]
+    context = data["cover_letter"]
+    html = letters_pdf.renderer.render(template, context)
+    return html
 
+
+@app.post("/api/cover-letter/download")
+def download_cover_letter(data: dict = Body(...)):
+    template = data["template"]
+    context = data["cover_letter"]
+    filename = f"cover_letter_{uuid.uuid4()}.pdf"
+    output_path = os.path.join(COVER_LETTER_OUTPUT_DIR, filename)
+    letters_pdf.generate(template_name=template, output_filename=output_path, context=context)
+    return FileResponse(path=output_path, filename="My_Cover_Letter.pdf", media_type="application/pdf")
+
+
+@app.get("/api/cover-letter/templates")
+def list_cover_letter_templates():
+    try:
+        templates = [
+            f for f in os.listdir(COVER_LETTER_TEMPLATES_DIR)
+            if os.path.isfile(os.path.join(COVER_LETTER_TEMPLATES_DIR, f)) and f.endswith(".html")
+        ]
+        return JSONResponse(content={"templates": templates})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.post("/api/cover-letter/generate-ai")
+def generate_cover_letter_ai(payload: dict = Body(...)):
+    context = payload.get("context", {})
+    user_input = payload.get("user_input", "")
+
+    prompt = f"""
+You are a professional career assistant.
+
+Using the information below, write a professional cover letter body
+(no address header, no closing signature).
+
+Applicant:
+Name: {context.get('full_name')}
+Job Title: {context.get('job_title')}
+Email: {context.get('email')}
+Location: {context.get('location')}
+
+Recipient:
+Company: {context.get('recipient_company')}
+Position: {context.get('recipient_position')}
+
+User Notes:
+{user_input}
+
+Rules:
+- Professional tone
+- Clear and concise
+- 3–4 short paragraphs
+- No emojis
+"""
+    completion = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You generate professional cover letters."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.6,
+        max_tokens=500,
+    )
+    return JSONResponse(content={"generated_text": completion.choices[0].message.content})
+
+
+# =========================
+# User Routes (Register & Login)
+# =========================
+@app.post("/register")
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.username == user.username).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt())
+    db_user = models.User(
+        username=user.username,
+        password=hashed_pw.decode(),
+        full_name=user.full_name,
+        job_title=user.job_title,
+        email=user.email,
+        phone=user.phone,
+        location=user.location,
+        profile_summary=user.profile_summary,
+        photo=user.photo
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return {"message": "User created successfully"}
+
+
+@app.post("/login")
+def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == credentials.username).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not bcrypt.checkpw(credentials.password.encode("utf-8"), user.password.encode()):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    token = jwt.encode({"sub": user.username, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@app.get("/me")
+def get_my_info(current_username: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == current_username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Return only personal info (hide password)
+    return {
+        "username": user.username,
+        "full_name": user.full_name,
+        "job_title": user.job_title,
+        "email": user.email,
+        "phone": user.phone,
+        "location": user.location,
+        "profile_summary": user.profile_summary,
+        "photo": user.photo
+    }
+
+
+
+@app.post("/documents/upload")
+def upload_document(file: UploadFile = File(...), current_username: str = Depends(get_current_user)):
+    user_folder = os.path.join(UPLOAD_DIR, current_username)
+    os.makedirs(user_folder, exist_ok=True)
+
+    file_path = os.path.join(user_folder, file.filename)
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    return {"message": "File uploaded successfully", "filename": file.filename}
+
+
+@app.get("/documents")
+def list_documents(current_username: str = Depends(get_current_user)):
+    user_folder = os.path.join(UPLOAD_DIR, current_username)
+    if not os.path.exists(user_folder):
+        return {"documents": []}
+    docs = os.listdir(user_folder)
+    return {"documents": docs}
+
+
+from fastapi import Query
+
+@app.get("/documents/download/{filename}")
+def download_document(filename: str, token: str = Query(...), db: Session = Depends(get_db)):
+    try:
+        # decode JWT token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user_folder = os.path.join(UPLOAD_DIR, username)
+    file_path = os.path.join(user_folder, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, filename=filename)
+
+
+
+@app.delete("/documents/delete/{filename}")
+def delete_document(filename: str, current_username: str = Depends(get_current_user)):
+    user_folder = os.path.join(UPLOAD_DIR, current_username)
+    file_path = os.path.join(user_folder, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return {"message": "File deleted"}
+    raise HTTPException(status_code=404, detail="File not found")
+
+# =========================
+# Run server
+# =========================
+if __name__ == "__main__":
     uvicorn.run(
-        "app:app",   # 👈 filename:FastAPI instance
+        "app:app",   # filename:FastAPI instance
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=True,
     )
