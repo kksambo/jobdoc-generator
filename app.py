@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from groq import Groq
 from pdf.generator import PDFGenerator
+import requests
 
 from typing import List
 
@@ -327,6 +328,104 @@ def delete_document(filename: str, current_username: str = Depends(get_current_u
         return {"message": "File deleted"}
     raise HTTPException(status_code=404, detail="File not found")
 
+
+
+
+ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
+ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
+
+BASE_URL = "https://api.adzuna.com/v1/api/jobs/za/search/1"
+
+
+@app.get("/api/jobs/search")
+def search_jobs(
+    title: str = Query(..., min_length=2),
+    location: str = Query("", max_length=100),
+):
+    params = {
+        "app_id": ADZUNA_APP_ID,
+        "app_key": ADZUNA_APP_KEY,
+        "what": title,
+        "where": location,
+        "results_per_page": 20,
+        "content-type": "application/json",
+    }
+
+    response = requests.get(BASE_URL, params=params)
+
+    if response.status_code != 200:
+        return {"error": "Failed to fetch jobs"}
+
+    data = response.json()
+    return data.get("results", [])
+
+
+# backend/app/routes/job_applications.py
+
+from models import JobApplication
+from schemas import JobApplicationCreate, JobApplicationOut
+from typing import List
+
+
+@app.post("/api/jobs/track", response_model=JobApplicationOut)
+def track_job_application(app_data: JobApplicationCreate, db: Session = Depends(get_db)):
+    """
+    Save a job application to track.
+    """
+    app = JobApplication(**app_data.dict())
+    db.add(app)
+    db.commit()
+    db.refresh(app)
+    return app
+
+
+@app.get("/api/jobs/tracked", response_model=List[JobApplicationOut])
+def get_tracked_jobs(db: Session = Depends(get_db)):
+    """
+    Get all tracked job applications (latest first).
+    """
+    apps = db.query(JobApplication).order_by(JobApplication.created_at.desc()).all()
+    return apps
+
+
+@app.patch("/api/jobs/tracked/{app_id}")
+def update_job_status(app_id: int, status: str = Query(...), db: Session = Depends(get_db)):
+    """
+    Update the status of a tracked application.
+    """
+    app = db.query(JobApplication).filter(JobApplication.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    app.status = status
+    db.add(app)
+    db.commit()
+    db.refresh(app)
+    return app
+
+@app.patch("/api/jobs/{job_id}/status")
+def update_job_status(job_id: int, status: str = Query(...), db: Session = Depends(get_db)):
+    """
+    Update the status of a tracked job.
+    """
+    job = db.query(models.JobApplication).filter(models.JobApplication.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job.status = status
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+@app.get("/api/jobs", response_model=List[JobApplicationOut])
+def get_user_jobs(username: str = Query(...), db: Session = Depends(get_db)):
+    """
+    Get all jobs tracked by a specific user.
+    """
+    apps = db.query(models.JobApplication).filter(
+        models.JobApplication.username == username
+    ).order_by(models.JobApplication.created_at.desc()).all()
+    return apps
 # =========================
 # Run server
 # =========================
